@@ -55,4 +55,11 @@
 
 ---
 
-## 📁 ساختار پروژه | Project Structure
+## 📁 ساختار پروژه |Project Structure
+weather-app/
+│
+├── index.html # فایل اصلی HTML (ساختار صفحه)
+├── style.css # فایل استایل (طراحی و ظاهر)
+├── script.js # فایل جاوااسکریپت (منطق برنامه)
+│
+└── README.md # مستندات پروژه
