@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>پیش‌بینی آب و هوا</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cstyle%3E.sun%7Banimation: spin 6s linear infinite;transform-origin: 50px 35px;%7D.cloud%7Banimation: move 4s ease-in-out infinite;%7D@keyframes spin%7B100%25%7Btransform: rotate(360deg);%7D%7D@keyframes move%7B0%25,100%25%7Btransform: translateX(0);%7D50%25%7Btransform: translateX(4px);%7D%7D%3C/style%3E%3Ccircle class='sun' cx='50' cy='35' r='12' fill='%23FFD700'/%3E%3Ccircle cx='50' cy='35' r='6' fill='%23FFA500'/%3E%3Cpath class='cloud' d='M32,58 Q36,48 46,50 Q52,44 60,48 Q70,46 73,56 Q76,64 68,66 L36,66 Q28,64 32,58Z' fill='%23FFFFFF'/%3E%3C/svg%3E">
+    
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- فونت ایران سنس -->
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdir/iransans@v5.0.0/fonts/IRANSansWeb.css" rel="stylesheet">
+    
+    <!-- فایل استایل جداگانه -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- کتابخانه‌های مورد نیاز برای PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <!-- خورشید سه بعدی -->
+    <div class="sun-3d"></div>
+
+    <!-- ابرهای سه بعدی -->
+    <div class="cloud-3d cloud1"></div>
+    <div class="cloud-3d cloud2"></div>
+    <div class="cloud-3d cloud3"></div>
+    <div class="cloud-3d cloud4"></div>
+
+    <!-- پرنده‌ها -->
+    <div class="bird bird1">🐦</div>
+    <div class="bird bird2">🕊️</div>
+
+    <!-- ذرات معلق -->
+    <div class="particles" id="particles"></div>
+    
+    <div class="container">
+        <h1>🌤️ پیش‌بینی آب و هوا</h1>
+        <div class="sub">وضعیت جوی هر شهر دنیا</div>
+        
+        <input type="text" id="city" placeholder="مثال: Tehran, London, Paris" onkeypress="handleEnter(event)">
+        <br>
+        <button onclick="getWeather()">
+            <i class="fas fa-search"></i> جستجو
+        </button>
+        
+        <div class="loading-container" id="loading">
+            <i class="fas fa-hourglass-half fa-hourglass"></i>
+            <div class="loading-text">
+                در حال دریافت اطلاعات <i class="dot-floating fas fa-ellipsis-h"></i>
+            </div>
+        </div>
+        
+        <div class="result" id="result">
+            <div class="city" id="cityName"></div>
+            <div class="temp" id="temp"></div>
+            <div id="desc"></div>
+            <div class="info">
+                <div>
+                    <i class="fas fa-thermometer-half"></i> <span id="feelsLabel">احساس</span><br>
+                    <span id="feels"></span>
+                </div>
+                <div>
+                    <i class="fas fa-tint"></i> <span id="humidityLabel">رطوبت</span><br>
+                    <span id="humidity"></span>
+                </div>
+                <div>
+                    <i class="fas fa-wind"></i> <span id="windLabel">باد</span><br>
+                    <span id="wind"></span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- نمودار دمای ۷ روز آینده -->
+        <div class="weather-chart" id="weatherChart" style="display: none;">
+            <div class="chart-header">
+                <i class="fas fa-chart-line"></i>
+                <span id="chartTitle">پیش‌بینی دمای ۷ روز آینده</span>
+            </div>
+            <div class="chart-bars" id="chartBars"></div>
+        </div>
+        
+        <!-- دکمه ذخیره شهر مورد علاقه -->
+        <div class="save-city-btn" id="saveCityBtn" onclick="saveCurrentCity()" style="display: none;">
+            <i class="far fa-heart" id="saveIcon"></i>
+            <span>ذخیره در علاقه مندی ها</span>
+        </div>
+
+        <!-- بخش شهرهای مورد علاقه -->
+        <div class="favorite-section">
+            <div class="favorite-header">
+                <i class="fas fa-heart"></i>
+                <span>شهرهای مورد علاقه من</span>
+                <button class="clear-favorites-btn" onclick="clearAllFavorites()">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+            <div class="favorites-list" id="favoritesList">
+                <div class="no-favorites">
+                    <i class="fas fa-star"></i>
+                    <p>شهری ذخیره نشده است</p>
+                    <small>برای ذخیره شهر، روی قلب کلیک کنید</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="error" id="error">
+            <i class="fas fa-exclamation-triangle"></i> خطا: شهر پیدا نشد
+        </div>
+    </div>
+
+    <!-- دکمه دارک مود -->
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="حالت تاریک">
+        <div class="toggle-track">
+            <div class="toggle-thumb">
+                <i class="fas fa-sun" id="themeIcon"></i>
+            </div>
+        </div>
+        <span class="tooltip" id="tooltipText">حالت تاریک</span>
+    </button>
+
+    <!-- دکمه‌های پایین سمت راست (راهنما، زبان، PDF و نمودار) -->
+    <div class="bottom-buttons">
+        <button class="help-button" id="helpButton" onclick="showHelpModal()">
+            <div class="help-circle">
+                <i class="fas fa-question"></i>
+            </div>
+            <span class="help-tooltip">راهنما</span>
+        </button>
+
+        <button class="lang-button" id="langButton" onclick="toggleLanguage()">
+            <div class="lang-circle">
+                <i class="fas fa-globe"></i>
+                <span class="lang-text">EN</span>
+            </div>
+            <span class="lang-tooltip">English / فارسی</span>
+        </button>
+
+        <button class="pdf-button" id="pdfButton" onclick="downloadPDF()">
+            <div class="pdf-circle">
+                <i class="fas fa-file-pdf"></i>
+            </div>
+            <span class="pdf-tooltip">دانلود PDF</span>
+        </button>
+
+        <button class="chart-button" id="chartButton" onclick="showChart()" style="display: none;">
+            <div class="chart-circle">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <span class="chart-tooltip">نمودار دما</span>
+        </button>
+    </div>
+
+    <!-- پیام اخطار سفارشی -->
+    <div id="customAlert" class="custom-alert-overlay">
+        <div class="alert-card">
+            <div class="alert-icon-wrapper">
+                <i class="fas fa-exclamation"></i>
+            </div>
+            <div class="alert-indent"></div>
+            <div class="alert-message">
+                <i class="fas fa-map-marker-alt"></i> لطفاً نام شهر یا کشور را وارد کنید
+            </div>
+            <div class="alert-submessage">
+                برای جستجو، نام یک شهر معتبر را تایپ نمایید
+            </div>
+            <button class="alert-button" onclick="closeAlert()">
+                <i class="fas fa-check"></i> متوجه شدم
+            </button>
+        </div>
+    </div>
+
+    <!-- مودال راهنما -->
+    <div id="helpModal" class="help-modal-overlay">
+        <div class="help-card">
+            <div class="help-icon-wrapper">
+                <i class="fas fa-question"></i>
+            </div>
+            <div class="help-indent"></div>
+            <div class="help-title">
+                <i class="fas fa-info-circle"></i> درباره این برنامه
+            </div>
+            <div class="help-content">
+                <p>🌤️ <strong>پیش‌بینی آب و هوا</strong></p>
+                <p>این برنامه به شما امکان می‌دهد وضعیت جوی شهرهای مختلف را مشاهده کنید.</p>
+                
+                <div class="help-section">
+                    <i class="fas fa-search"></i> <strong>نحوه استفاده:</strong>
+                    <ul>
+                        <li>نام شهر را در کادر جستجو وارد کنید (به فارسی یا انگلیسی)</li>
+                        <li>کلید Enter یا دکمه جستجو را بزنید</li>
+                        <li>اطلاعات آب و هوا شامل دما، رطوبت و سرعت باد نمایش داده می‌شود</li>
+                    </ul>
+                </div>
+                
+                <div class="help-section">
+                    <i class="fas fa-heart"></i> <strong>شهرهای مورد علاقه:</strong>
+                    <ul>
+                        <li>بعد از جستجوی هر شهر، روی دکمه <i class="far fa-heart"></i> <strong>"ذخیره در علاقه مندی ها"</strong> کلیک کنید</li>
+                        <li>شهرهای ذخیره شده در بخش <strong>"شهرهای مورد علاقه من"</strong> نمایش داده می‌شوند</li>
+                        <li>برای مشاهده سریع آب و هوا، روی نام هر شهر کلیک کنید</li>
+                        <li>برای حذف یک شهر، روی دکمه <i class="fas fa-times-circle"></i> کنار آن کلیک کنید</li>
+                        <li>با کلیک روی دکمه <i class="fas fa-trash-alt"></i> می‌توانید همه شهرها را یکباره حذف کنید</li>
+                        <li>شهرهای تکراری (مانند Tehran و تهران) به عنوان یکی ذخیره می‌شوند</li>
+                    </ul>
+                </div>
+                
+                <div class="help-section">
+                    <i class="fas fa-file-pdf"></i> <strong>دانلود گزارش PDF:</strong>
+                    <ul>
+                        <li>بعد از جستجوی هر شهر، روی دکمه <i class="fas fa-file-pdf"></i> <strong>"دانلود PDF"</strong> کلیک کنید</li>
+                        <li>گزارش کامل آب و هوا شامل دما، رطوبت، سرعت باد و تاریخ به صورت PDF دانلود می‌شود</li>
+                        <li>PDF دانلود شده با <strong>زبان انتخابی شما</strong> (فارسی یا انگلیسی) خواهد بود</li>
+                        <li>در حالت فارسی، PDF به صورت راست‌چین و با تاریخ شمسی نمایش داده می‌شود</li>
+                        <li>در حالت انگلیسی، PDF به صورت چپ‌چین و با تاریخ میلادی نمایش داده می‌شود</li>
+                        <li>گزارش PDF دارای طراحی زیبا و حرفه‌ای با گرادینت بنفش می‌باشد</li>
+                    </ul>
+                </div>
+                
+                <div class="help-section">
+                    <i class="fas fa-chart-line"></i> <strong>نمودار دما:</strong>
+                    <ul>
+                        <li>بعد از جستجوی هر شهر، روی دکمه <i class="fas fa-chart-line"></i> <strong>"نمودار دما"</strong> کلیک کنید</li>
+                        <li>نمودار پیش‌بینی دمای ۷ روز آینده به صورت گرافیکی نمایش داده می‌شود</li>
+                        <li>با قرار گرفتن موس روی هر ستون، دمای آن روز نمایش داده می‌شود</li>
+                        <li>نمودار به صورت خودکار بر اساس دمای فعلی شهر محاسبه می‌شود</li>
+                    </ul>
+                </div>
+                
+                <div class="help-section">
+                    <i class="fas fa-palette"></i> <strong>حالت تاریک/روشن:</strong>
+                    <ul>
+                        <li>با کلیک روی دکمه خورشید <i class="fas fa-sun"></i> یا ماه <i class="fas fa-moon"></i> در بالا سمت راست</li>
+                        <li>تم برنامه بین حالت روشن و تاریک تغییر می‌کند</li>
+                        <li>تنظیمات شما در مرورگر ذخیره می‌شود</li>
+                    </ul>
+                </div>
+                
+                <div class="help-section">
+                    <i class="fas fa-globe"></i> <strong>تغییر زبان:</strong>
+                    <ul>
+                        <li>با کلیک روی دکمه <i class="fas fa-globe"></i> در پایین سمت راست</li>
+                        <li>زبان برنامه بین فارسی و انگلیسی تغییر می‌کند</li>
+                        <li>تمامی متن‌ها، مودال‌ها و دکمه‌ها به زبان جدید ترجمه می‌شوند</li>
+                        <li>گزارش PDF و نمودار نیز به زبان انتخابی شما تغییر می‌کند</li>
+                    </ul>
+                </div>
+                
+                <div class="help-section">
+                    <i class="fas fa-city"></i> <strong>شهرهای پشتیبانی شده:</strong>
+                    <ul>
+                        <li>تهران، مشهد، اصفهان، شیراز، تبریز، رشت</li>
+                        <li>لندن، پاریس، نیویورک، توکیو و...</li>
+                        <li>برای سایر شهرها، داده‌های تقریبی نمایش داده می‌شود</li>
+                    </ul>
+                </div>
+
+                <div class="help-note">
+                    <i class="fas fa-database"></i> <strong>نکته فنی:</strong> شهرهای مورد علاقه شما در مرورگر ذخیره می‌شوند و پس از بستن مرورگر نیز باقی می‌مانند. همچنین گزارش‌های PDF با فرمت A4 و کیفیت بالا ذخیره می‌شوند.
+                </div>
+            </div>
+            <button class="help-button-close" onclick="closeHelpModal()">
+                <i class="fas fa-check"></i> متوجه شدم
+            </button>
+        </div>
+    </div>
+
+    <!-- پیام موفقیت آمیز (تیک سبز) -->
+    <div id="successModal" class="success-modal-overlay">
+        <div class="success-card">
+            <div class="success-icon-wrapper">
+                <i class="fas fa-check"></i>
+            </div>
+            <div class="success-indent"></div>
+            <div class="success-message" id="successMessage">
+                <i class="fas fa-heart"></i> شهر با موفقیت به لیست علاقه‌مندی‌ها افزوده شد!
+            </div>
+            <button class="success-button" onclick="closeSuccessModal()">
+                <i class="fas fa-check"></i> متوجه شدم
+            </button>
+        </div>
+    </div>
+
+    <!-- پیام اخطار شهر تکراری -->
+    <div id="duplicateAlert" class="duplicate-alert-overlay">
+        <div class="duplicate-card">
+            <div class="duplicate-icon-wrapper">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="duplicate-indent"></div>
+            <div class="duplicate-message" id="duplicateMessage">
+                <i class="fas fa-heart-broken"></i> این شهر قبلاً به لیست علاقه‌مندی‌ها افزوده شده است!
+            </div>
+            <button class="duplicate-button" onclick="closeDuplicateAlert()">
+                <i class="fas fa-check"></i> متوجه شدم
+            </button>
+        </div>
+    </div>
+
+    <!-- پیام تأیید حذف (ضربدر قرمز) -->
+    <div id="deleteConfirmModal" class="delete-modal-overlay">
+        <div class="delete-card">
+            <div class="delete-icon-wrapper">
+                <i class="fas fa-times"></i>
+            </div>
+            <div class="delete-indent"></div>
+            <div class="delete-message">
+                <i class="fas fa-trash-alt"></i> آیا مطمئن هستید که می‌خواهید این شهر را حذف کنید؟
+            </div>
+            <div class="delete-buttons">
+                <button class="delete-btn-no" onclick="confirmDeleteNo()">
+                    <i class="fas fa-times"></i> خیر
+                </button>
+                <button class="delete-btn-yes" onclick="confirmDeleteYes()">
+                    <i class="fas fa-check"></i> بله
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- فایل جاوااسکریپت جداگانه -->
+    <script src="script.js"></script>
+</body>
+</html>
